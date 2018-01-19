@@ -37,7 +37,7 @@ alias ExOneSignal.Notification
 Notification.new
 |> set_body("Example Body")
 |> add_player("one-signal-player-id")
-|> ExOneSignal.send
+|> ExOneSignal.deliver
 ```
 
 ### Adding a Title
@@ -71,7 +71,7 @@ iex> |> set_body("Français", :fr)
 ```
 
 ### Specifying Target Users
-To send a notification to a user's device, all you need is to add their OneSignal
+To deliver a notification to a user's device, all you need is to add their OneSignal
 `player_id_token`.
 ``` elixir
 iex> Notification.new
@@ -87,4 +87,45 @@ your client application (e.g. iOS or Android applications).
 iex> Notification.new
 iex> |> add_data(:targetUrl, "https://example.com")
 %Notification{data: %{url: "https://example.com"}}
+```
+
+### Asynchonous Delivery
+If you don't want to lock up your current process waiting on the network request
+to OneSignal, you can use the `deliver_later` function to fire off the
+notification in the background.
+
+``` elixir
+iex> Notification.new
+iex> |> ExOneSignal.deliver_later
+{:ok, #PID<0.255.0>}
+```
+
+To get the response from the async request, just setup a receive request and
+match on the returned process identifier. It is highly recommended with this
+approach to use a timeout in the receive block.
+
+``` elixir
+{:ok, process_id} = ExOneSignal.deliver_later(Notification.new)
+
+receive do
+  {^process_id, response} ->
+    case response do
+      {:ok, body} ->
+        # do something
+    end
+  after
+    1_000 ->
+      # the receive timed out after 1 second
+end
+```
+
+Alternatively, supply a callback function that will fire when the request finishes.
+
+``` elixir
+ExOneSignal.deliver_later(Notification.new, fn(response) ->
+  case response do
+    {:ok, body} ->
+      # do something
+  end
+end)
 ```

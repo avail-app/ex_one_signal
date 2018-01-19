@@ -1,5 +1,5 @@
 defmodule ExOneSignalTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   import ExOneSignal.Notification
   alias ExOneSignal.Notification
 
@@ -18,8 +18,8 @@ defmodule ExOneSignalTest do
     {:ok, bypass: bypass, client: client, notification: notification}
   end
 
-  describe "send/1" do
-    test "can send a notification to OneSignal", %{bypass: bypass, client: client, notification: notification} do
+  describe "deliver/1" do
+    test "can deliver a notification to OneSignal", %{bypass: bypass, client: client, notification: notification} do
       Bypass.expect_once bypass, "POST", @notification_path, fn conn ->
         {:ok, body, _} = Plug.Conn.read_body(conn)
         body = Poison.decode!(body)
@@ -32,7 +32,7 @@ defmodule ExOneSignalTest do
         Plug.Conn.resp(conn, 200, "{\"recipients\": 5}")
       end
 
-      assert {:ok, _body} = ExOneSignal.send(client, notification)
+      assert {:ok, _body} = ExOneSignal.deliver(client, notification)
     end
 
     test "will receive a decoded response body when the connection returns a successful code", %{bypass: bypass, client: client} do
@@ -46,7 +46,7 @@ defmodule ExOneSignalTest do
         Plug.Conn.resp(conn, 200, Poison.encode!(response_body))
       end
 
-      assert {:ok, ^response_body} = ExOneSignal.send(client, Notification.new)
+      assert {:ok, response_body} == ExOneSignal.deliver(client, Notification.new)
     end
 
     test "when an invalid status code is returned, the response errors are returned", %{bypass: bypass, client: client} do
@@ -56,12 +56,51 @@ defmodule ExOneSignalTest do
         Plug.Conn.resp(conn, 400, Poison.encode!(%{errors: errors}))
       end
 
-      assert {:error, ^errors} = ExOneSignal.send(client, Notification.new)
+      assert {:error, errors} == ExOneSignal.deliver(client, Notification.new)
     end
 
     test "returns an error when the service is down", %{bypass: bypass, client: client} do
       Bypass.down(bypass)
-      assert {:error, :econnrefused} = ExOneSignal.send(client, Notification.new)
+      assert {:error, :econnrefused} = ExOneSignal.deliver(client, Notification.new)
+    end
+  end
+
+  describe "deliver_later/3" do
+    test "can deliver the notification asynchronously and still get the response", %{bypass: bypass, client: client} do
+      response_body = %{"recipients" => 5}
+      Bypass.expect_once bypass, "POST", @notification_path, fn conn ->
+        Plug.Conn.resp(conn, 200, Poison.encode!(response_body))
+      end
+
+      {:ok, process_id} = ExOneSignal.deliver_later(client, Notification.new)
+
+      receive do
+        {^process_id, response} ->
+          case response do
+            {:ok, body} ->
+              assert response_body == body
+          end
+      end
+    end
+
+    test "can supply a callback, rather than using `response do`", %{bypass: bypass, client: client} do
+      response_body = %{"recipients" => 5}
+      Bypass.expect_once bypass, "POST", @notification_path, fn conn ->
+        Plug.Conn.resp(conn, 200, Poison.encode!(response_body))
+      end
+
+      {:ok, process_id} = ExOneSignal.deliver_later(client, Notification.new, fn(response) ->
+        case response do
+          {:ok, body} ->
+            assert response_body == body
+        end
+      end)
+
+      # also receive so the test doesn't exit early
+      receive do
+        {^process_id, {:ok, body}} ->
+          assert response_body == body
+      end
     end
   end
 end
