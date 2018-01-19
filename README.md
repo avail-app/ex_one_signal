@@ -1,4 +1,5 @@
 # ExOneSignal
+[![CircleCI](https://circleci.com/gh/logit-ai/one_signal.svg?style=svg)](https://circleci.com/gh/logit-ai/one_signal)
 A simple interface to interact with [OneSignal](https://onesignal.com/)'s push notification API.
 
 ## Installation
