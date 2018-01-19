@@ -5,7 +5,11 @@ defmodule ExOneSignal.Mixfile do
     [
       app: :ex_one_signal,
       version: "0.1.0",
-      elixir: "~> 1.5",
+      name: "ExOneSignal",
+      description: "A simple interface to interact with OneSignal's push notification API.",
+      package: package(),
+      source_url: "https://github.com/logit-ai/ex_one_signal",
+      elixir: "~> 1.5.1",
       start_permanent: Mix.env == :prod,
       deps: deps()
     ]
@@ -23,8 +27,21 @@ defmodule ExOneSignal.Mixfile do
   defp deps do
     [
       {:bypass, "~> 0.8", only: :test},
+      {:ex_doc, ">= 0.0.0", only: :dev},
       {:httpoison, "~> 1.0"},
       {:poison, "~> 3.1"}
+    ]
+  end
+
+  defp package do
+    [
+      name: "ex_one_signal",
+      files: ["lib", "mix.exs", "README.md", "LICENSE"],
+      maintainers: ["Jamie Evans"],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/logit-ai/ex_one_signal"
+      }
     ]
   end
 end
