@@ -28,11 +28,31 @@ defmodule ExOneSignalTest do
         assert body["contents"] == %{"en" => "Body"}
         assert body["include_player_ids"] == ["abc123", "def456"]
         assert body["data"] == %{"url" => "https://example.com"}
+        assert body["ios_badgeType"] == "Increase"
+        assert body["ios_badgeCount"] == 0
 
         Plug.Conn.resp(conn, 200, "{\"recipients\": 5}")
       end
 
       assert {:ok, _body} = ExOneSignal.deliver(client, notification)
+    end
+
+    test "can deliver a notification to OneSignal and set the badge count", %{bypass: bypass, client: client, notification: notification} do
+      Bypass.expect_once bypass, "POST", @notification_path, fn conn ->
+        {:ok, body, _} = Plug.Conn.read_body(conn)
+        body = Poison.decode!(body)
+
+        assert body["headings"] == %{"en" => "Title"}
+        assert body["contents"] == %{"en" => "Body"}
+        assert body["include_player_ids"] == ["abc123", "def456"]
+        assert body["data"] == %{"url" => "https://example.com"}
+        assert body["ios_badgeType"] == "SetTo"
+        assert body["ios_badgeCount"] == 3
+
+        Plug.Conn.resp(conn, 200, "{\"recipients\": 5}")
+      end
+
+      assert {:ok, _body} = ExOneSignal.deliver(client, set_badge_count(notification, 3))
     end
 
     test "will receive a decoded response body when the connection returns a successful code", %{bypass: bypass, client: client} do
