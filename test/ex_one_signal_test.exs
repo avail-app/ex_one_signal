@@ -48,11 +48,35 @@ defmodule ExOneSignalTest do
         assert body["data"] == %{"url" => "https://example.com"}
         assert body["ios_badgeType"] == "SetTo"
         assert body["ios_badgeCount"] == 3
+        assert body["content_available"] == false
 
         Plug.Conn.resp(conn, 200, "{\"recipients\": 5}")
       end
 
       assert {:ok, _body} = ExOneSignal.deliver(client, set_badge_count(notification, 3))
+    end
+
+    test "can deliver a notification silently", %{bypass: bypass, client: client, notification: notification} do
+      Bypass.expect_once bypass, "POST", @notification_path, fn conn ->
+        {:ok, body, _} = Plug.Conn.read_body(conn)
+        body = Poison.decode!(body)
+
+        assert body["headings"] == %{}
+        assert body["contents"] == %{}
+        assert body["include_player_ids"] == ["abc123", "def456"]
+        assert body["data"] == %{"url" => "https://example.com"}
+        assert body["ios_badgeType"] == "SetTo"
+        assert body["ios_badgeCount"] == 5
+        assert body["content_available"] == true
+
+        Plug.Conn.resp(conn, 200, "{\"recipients\": 5}")
+      end
+
+      notification =
+        notification
+        |> set_badge_count(5)
+        |> set_send_silently
+      assert {:ok, _body} = ExOneSignal.deliver(client, notification)
     end
 
     test "will receive a decoded response body when the connection returns a successful code", %{bypass: bypass, client: client} do

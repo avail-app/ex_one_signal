@@ -7,7 +7,8 @@ defmodule ExOneSignal.Notification do
     include_player_ids: [],
     data: %{},
     ios_badgeType: "Increase",
-    ios_badgeCount: 0
+    ios_badgeCount: 0,
+    content_available: false
 
   def new, do: %Notification{}
 
@@ -34,4 +35,7 @@ defmodule ExOneSignal.Notification do
   def set_badge_count(%Notification{} = notification, badge_count)
   when is_integer(badge_count),
     do: %{notification | ios_badgeType: "SetTo", ios_badgeCount: badge_count}
+
+  def set_send_silently(%Notification{} = notification),
+    do: %{notification | content_available: true, contents: %{}, headings: %{}}
 end

@@ -4,7 +4,7 @@ defmodule ExOneSignal.Mixfile do
   def project do
     [
       app: :ex_one_signal,
-      version: "0.1.1",
+      version: "0.1.2",
       name: "ExOneSignal",
       description: "A simple interface to interact with OneSignal's push notification API.",
       package: package(),
