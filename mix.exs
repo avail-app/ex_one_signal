@@ -27,7 +27,7 @@ defmodule ExOneSignal.Mixfile do
   defp deps do
     [
       {:bypass, "~> 0.8", only: :test},
-      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:ex_doc, "~> 0.19", only: :dev},
       {:httpoison, "~> 1.0"},
       {:poison, "~> 3.1"}
     ]
